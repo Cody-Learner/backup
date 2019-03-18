@@ -16,7 +16,7 @@ HOMEdev="/dev/sdc3"
 	echo "time: `date '+%H:%M:%S'`"  "date: `date '+%m/%d/%Y'`"
 	echo
 
-#### MAKE SURE REMOVABLE DRIVE IS AVAILABLE AND PROPER DRIVE VIA UUID. EXIT IF NOT TRUE. ####
+#### MAKE SURE REMOVABLE DRIVE IS AVAILABLE AND IS THE PROPER DRIVE VIA UUID. EXIT IF NOT TRUE. ####
 
 Root=$(lsblk -no UUID "${ROOTdev}") &>>"${Buplog}"
 Home=$(lsblk -no UUID "${HOMEdev}") &>>"${Buplog}"
