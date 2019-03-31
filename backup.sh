@@ -1,10 +1,10 @@
 #!/bin/bash
 # Codys rsync backup script
-# 2019-03-16
+# 2019-03-31
 #
 
 UZR=$(getent passwd 1000 | awk -F':' '{print $1}')
-Pdate=`date '+%m-%d-%Y'`
+Pdate=$(date '+%m-%d-%Y')
 Buplog="/home/${UZR}/Desktop/${Pdate}".backup
 ROOTdev="/dev/sdc1"
 HOMEdev="/dev/sdc3"
@@ -13,7 +13,7 @@ HOMEdev="/dev/sdc3"
 	exec > >(tee -i "${Buplog}") 2>&1
 
 	echo "${USER} ran backup script today."
-	echo "time: `date '+%H:%M:%S'`"  "date: `date '+%m/%d/%Y'`"
+	echo "time: $(date '+%H:%M:%S')"  "date: ${Pdate}"
 	echo
 
 #### MAKE SURE REMOVABLE DRIVE IS AVAILABLE AND IS THE PROPER DRIVE VIA UUID. EXIT IF NOT TRUE. ####
@@ -50,8 +50,8 @@ fi
 	chown "${UZR}" /home/"${UZR}"/Desktop/*.backup
 
 	echo
-	umount "${ROOTdev}" || echo "Problem with unmounting ${ROOTdev}" >>${Buplog}"
-	umount "${HOMEdev}" || echo "Problem with unmounting ${HOMEdev}" >>${Buplog}"
+	umount "${ROOTdev}" || echo "Problem with unmounting ${ROOTdev}" >>"${Buplog}"
+	umount "${HOMEdev}" || echo "Problem with unmounting ${HOMEdev}" >>"${Buplog}"
 
 
 # Backup to nas, ran manually,
