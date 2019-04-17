@@ -1,6 +1,6 @@
 #!/bin/bash
 # Codys rsync backup script
-# 2019-03-31
+# 2019-04-01
 #
 
 UZR=$(getent passwd 1000 | awk -F':' '{print $1}')
@@ -16,10 +16,10 @@ HOMEdev="/dev/sdc3"
 	echo "time: $(date '+%H:%M:%S')"  "date: ${Pdate}"
 	echo
 
-#### MAKE SURE REMOVABLE DRIVE IS AVAILABLE AND IS THE PROPER DRIVE VIA UUID. EXIT IF NOT TRUE. ####
+#### ASSURE REMOVABLE BACKUP DRIVE IS AVAILABLE AND PROPER UUID. EXIT SCRIPT IF NOT TRUE. ####
 
-Root=$(lsblk -no UUID "${ROOTdev}") &>>"${Buplog}"
-Home=$(lsblk -no UUID "${HOMEdev}") &>>"${Buplog}"
+Root=$(lsblk -no UUID "${ROOTdev}")
+Home=$(lsblk -no UUID "${HOMEdev}")
 
 if	! [[ (${Root} = ecdd4c65-7a93-4be9-9ebf-d201a34dbe3d) && (${Home} = ea3ade3a-cb50-4ef2-afdd-ff755ca87398) ]]; then
 	echo ; echo "Destination device unavailable, aborting backup." ; echo
@@ -50,8 +50,8 @@ fi
 	chown "${UZR}" /home/"${UZR}"/Desktop/*.backup
 
 	echo
-	umount "${ROOTdev}" || echo "Problem with unmounting ${ROOTdev}" >>"${Buplog}"
-	umount "${HOMEdev}" || echo "Problem with unmounting ${HOMEdev}" >>"${Buplog}"
+	umount "${ROOTdev}" || echo "Problem with unmounting ${ROOTdev}"
+	umount "${HOMEdev}" || echo "Problem with unmounting ${HOMEdev}"
 
 
 # Backup to nas, ran manually,
