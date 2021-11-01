@@ -23,6 +23,7 @@ Home=$(lsblk -no UUID "${HOMEdev}")
 
 if	! [[ (${Root} = ecdd4c65-7a93-4be9-9ebf-d201a34dbe3d) && (${Home} = ea3ade3a-cb50-4ef2-afdd-ff755ca87398) ]]; then
 	echo ; echo "Destination device unavailable, aborting backup." ; echo
+	chown "${UZR}" /home/"${UZR}"/Desktop/*.backup	
 	exit
 fi
 
