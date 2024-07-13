@@ -1,0 +1,68 @@
+#!/bin/bash
+# Arch2023p3-2 rsync backup to sata-M2 external ssd
+# 2024-07-13
+#
+
+UZR=$(getent passwd 1000 | awk -F':' '{print $1}')
+Pdate=$(date '+%Y-%m-%d')
+Buplog="/home/${UZR}/Desktop/${Pdate}".backup
+
+DESTdev="/dev/sda2"
+HOMEdev="/dev/sda4"
+EFIdev="/dev/sda1"
+VBdev="/dev/sda5"
+
+	touch "${Buplog}"
+	exec > >(tee -i "${Buplog}") 2>&1
+
+	echo "${USER} ran backup script today."
+	echo "time: $(date '+%H:%M:%S')"  "date: ${Pdate}"
+	echo
+
+#### ASSURE REMOVABLE BACKUP DRIVE IS AVAILABLE AND PROPER UUID. EXIT SCRIPT IF NOT TRUE. ####
+
+Dest=$(/usr/bin/lsblk -no UUID "${DESTdev}")
+Home=$(/usr/bin/lsblk -no UUID "${HOMEdev}")
+Efi=$(/usr/bin/lsblk -no UUID "${EFIdev}")
+Vb=$(/usr/bin/lsblk -no UUID "${VBdev}")
+
+
+if	[[ ${Dest} != 0b0875e0-df3a-4e74-84e8-88bb8e5e48fa ]] && \
+	[[ ${Home} != 302d352c-2974-4901-8a7d-3d0a108ecb54 ]] && \	
+	[[ ${Efi}  != 08F1-EAAF ]]                            && \
+	[[ ${Vb}   != 0f8369a3-5edd-4c83-ac47-35bd30bffa2d ]]; then
+	echo ; echo "Destination device unavailable, aborting backup." ; echo
+	chown "${UZR}" /home/"${UZR}"/Desktop/*.backup	
+	exit
+fi
+	#	mkdir -p /mnt/home
+	#	mkdir -p /mnt/boot/EFI
+	#	mkdir -p /mnt/home/jeff/VirtualBox-VMs
+
+	mount "${DESTdev}" /mnt					|| { echo "Problem mounting ${DESTdev}" ; exit ; }
+	mount "${HOMEdev}" /mnt/home 				|| { echo "Problem mounting ${HOMEdev}" ; exit ; }
+	mount "${EFIdev}"  /mnt/boot/EFI 			|| { echo "Problem mounting ${EFIdev}"  ; exit ; }
+	mount "${VBdev}"   /mnt/home/jeff/VirtualBox-VMs	|| { echo "Problem mounting ${VBdev}"   ; exit ; }
+
+
+	echo; echo; echo "Files Transfered And Deleted From Destination:" ; echo
+	
+	#	--dry-run \
+
+	rsync -aAHXv \
+	--delete \
+	--exclude={/boot/grub/grub.cfg,/boot/EFI/,etc/fstab,/var/spool/cron/root,/var/lib/machines/firefox-container/,/dev/*,/proc/*,/sys/*,/tmp/*,/var/tmp/*,/run/*,/mnt/*,/media/*,/root/.cache/thumbnails/*,/lost+found,/home/jeff2/,/home/jeff/z-1Pic/Old-Backup/,/home/jeff/.local/share/Trash/,/home/jeff/.mozilla/firefox/rtqmx72n.dev-edition-default/datareporting/archived/,/home/jeff/.mozilla/firefox/rtqmx72n.dev-edition-default/storage/default/,/home/jeff/.cache/mozilla/firefox/,home/jeff/.mozilla/firefox/aoyfsc8v.default-release/storage/default/} \
+	/   /mnt
+
+
+	chown "${UZR}" /home/"${UZR}"/Desktop/*.backup
+
+	echo
+
+	umount "${EFIdev}"  || { echo "Problem unmounting ${EFIdev}"  ; exit ; }
+	umount "${VBdev}"   || { echo "Problem unmounting ${VBdev}"   ; exit ; }
+	umount "${HOMEdev}" || { echo "Problem unmounting ${HOMEdev}" ; exit ; }
+	umount "${DESTdev}" || { echo "Problem unmounting ${DESTdev}" ; exit ; }
+
+
+

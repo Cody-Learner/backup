@@ -6,8 +6,8 @@
 UZR=$(getent passwd 1000 | awk -F':' '{print $1}')
 Pdate=$(date '+%m-%d-%Y')
 Buplog="/home/${UZR}/Desktop/${Pdate}".backup
-ROOTdev="/dev/sdc1"
-HOMEdev="/dev/sdc3"
+ROOTdev="/dev/sdd1"
+HOMEdev="/dev/sdd3"
 
 	touch "${Buplog}"
 	exec > >(tee -i "${Buplog}") 2>&1
