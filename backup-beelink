@@ -1,0 +1,104 @@
+#!/bin/bash
+# Arch2025p04 rsync backup BeeLink
+# 2026-02-19 [Moved backup ESP to second rsync command due to FAT lacking file attributes.]
+# ref: https://wiki.archlinux.org/title/Rsync#Full_system_backup
+
+	(( $EUID != 0 ))&& { echo ERROR: Must run as root.; exit ; }
+
+### set -e
+### UZR=$(getent passwd 1000 | awk -F':' '{print $1}')
+
+UZR=jeff
+Pdate=$(date '+%Y-%m-%d')
+Buplog="/home/${UZR}/Desktop/${Pdate}".backup
+
+ROOTdev="/dev/sda7"
+HOMEdev="/dev/sda8"
+ESPdev="/dev/sda5"
+
+	touch "${Buplog}"
+TAG="$(basename "$0")"
+	exec > >(tee -i "${Buplog}")				# Logging: stdout to report, Buplog
+	exec 2> >(logger -t "$TAG")				# Logging: stderr to journald
+
+
+	echo "${USER} ran backup script today."
+	echo "time: $(date '+%H:%M:%S')"  "date: ${Pdate}"
+	echo "For errors, run 'journalctl -b -t backup-beelink'"
+
+#### ASSURE REMOVABLE BACKUP DRIVE IS AVAILABLE AND PROPER UUID. EXIT SCRIPT IF NOT TRUE. ####
+
+Root=$(/usr/bin/lsblk -no UUID "${ROOTdev}")
+Home=$(/usr/bin/lsblk -no UUID "${HOMEdev}")
+Esp=$(/usr/bin/lsblk -no UUID "${ESPdev}")
+
+
+
+if	[[ ${Root} != 244a5e88-2831-4089-8ab5-828482eff0f1 ]] && \
+	[[ ${Home} != 3cf28343-ab11-4dc1-a9d8-3a1f909941c7 ]] && \	
+	[[ ${Esp}  != C885-2A9D ]]; then
+	echo ; echo "Destination device unavailable, aborting backup." ; echo
+	chown "${UZR}" "/home/${UZR}/Desktop/${Pdate}".backup	
+	exit
+fi
+
+	mount "${ROOTdev}" /mnt					|| { echo "Problem mounting ${ROOTdev}" ; exit ; }
+
+	mkdir -p /mnt/home
+	mkdir -p /mnt/boot/efi
+
+	mount "${HOMEdev}" /mnt/home 				|| { echo "Problem mounting ${HOMEdev}" ; exit ; }
+	mount "${ESPdev}"  /mnt/boot/efi			|| { echo "Problem mounting ${ESPdev}"  ; exit ; }
+
+
+	echo; echo "Files Transfered And Deleted From Destination:" ; echo
+
+	#  --dry-run
+
+	rsync -aAHXv --delete					\
+	--exclude='/boot/efi/*'					\
+	--exclude='/boot/grub/grub.cfg'				\
+	--exclude='boot/efi/EFI-windows'			\
+	--exclude='/etc/fstab'					\
+	--exclude='/dev/*'					\
+	--exclude='/proc/*'					\
+	--exclude='/sys/*'					\
+	--exclude='/tmp/*'					\
+	--exclude='/var/cache/pacman/pkg/*'			\
+	--exclude='/var/tmp/*'					\
+	--exclude='/var/spool/cron/root'			\
+	--exclude='/var/lib/machines/'				\
+	--exclude='/run/*'					\
+	--exclude='/mnt/*'					\
+	--exclude='/media/*'					\
+	--exclude='/lost+found/'				\
+	--exclude='/home/jeff/z-1Pic/Old-Backup/'		\
+	--exclude='/home/jeff/.local/share/Trash/'		\
+	--exclude='/home/jeff/.cache/mozilla/firefox/***'					\
+	--exclude='/home/jeff/.config/mozilla/firefox/3wio88kr.default-release/storage/***' 	\
+	--exclude='/home/jeff/.config/mozilla/firefox/*/startupCache/***'			\
+	--exclude='/home/jeff/.cache/chromium/***'						\
+	--exclude='/home/jeff/.config/chromium/**/Cache/***'					\
+	--exclude='/home/jeff/.config/chromium/**/Code Cache/***'				\
+	--exclude='/home/jeff/.config/chromium/**/GPUCache/***'					\
+	--exclude='/home/jeff/.config/chromium/**/Service Worker/**/Cache*/***'			\
+	--exclude='/home/jeff/.config/chromium/**/Media Cache/***'				\
+	--exclude='/home/jeff/.cache/ZapZap/***'						\
+	/   /mnt
+
+
+	###---------------------------------------------------------------------###
+	### EFI partition ran separately due to FAT32 metadata incompatibility. ###
+	###---------------------------------------------------------------------###
+	rsync -rtv --delete /boot/efi/ /mnt/boot/efi/
+
+	chown "${UZR}:${UZR}" "/home/${UZR}/Desktop/${Pdate}".backup   || echo "Warning: chown issue l 90 UZR=${UZR} Pdate=${Pdate}"
+
+	echo
+
+	umount "${ESPdev}"  || echo "Problem unmounting ESPdev = ${ESPdev}"
+	umount "${HOMEdev}" || echo "Problem unmounting HOMEdev = ${HOMEdev}"
+	umount "${ROOTdev}" || echo "Problem unmounting ROOTdev = ${ROOTdev}"
+
+
+
